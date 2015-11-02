@@ -7,4 +7,6 @@ public class Beer {
     int id;
     String name;
     String type;
+
+
 }
