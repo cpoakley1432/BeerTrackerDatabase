@@ -12,37 +12,33 @@ import java.util.HashMap;
 public class Main {
 
     static void insertBeer (Connection conn , String name, String type) throws SQLException{
-        PreparedStatement stmt = conn.prepareStatement("INSERT INTO beers VALUES(? , ?) ");
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO beers VALUES(NULL , ? , ?) ");
         stmt.setString(1, name);
         stmt.setString(2, type);
         stmt.execute();
     }
 
-    static void deleteBeer (Connection conn , int selectNum) throws SQLException {
-        PreparedStatement stmt = conn.prepareStatement("DELETE FROM beers WHERE ROWNUM = ?");
-        stmt.setInt(1, selectNum);
+    static void deleteBeer (Connection conn , int id ) throws SQLException {
+        PreparedStatement stmt = conn.prepareStatement("DELETE FROM beers WHERE id = ?");
+        stmt.setInt(1, id);
         stmt.execute();
     }
     static ArrayList<Beer> selectBeers(Connection conn) throws SQLException{
         Statement stmt = conn.createStatement();
         ResultSet results = stmt.executeQuery("SELECT * from beers");
         ArrayList<Beer> beers = new ArrayList();
-        int id = 1;
         while (results.next()){
-            String name = results.getString("name");
-            String type = results.getString("type");
             Beer beer = new Beer();
-            beer.id = id;
-            beer.name = name;
-            beer.type = type;
+            beer.id = results.getInt("id");
+            beer.name = results.getString("name");
+            beer.type = results.getString("type");
             beers.add(beer);
-            id++;
         }
         return beers;
     }
 
     static void updateBeer (Connection conn, int selectNum, String name, String type)throws SQLException{
-        PreparedStatement stmt = conn.prepareStatement("UPDATE beers SET name = ? AND type = ? WHERE ROWNUM = ?");
+        PreparedStatement stmt = conn.prepareStatement("UPDATE beers SET name = ? , type = ? WHERE id = ?");
         stmt.setString(1 , name);
         stmt.setString(2, type);
         stmt.setInt(3, selectNum);
@@ -53,7 +49,7 @@ public class Main {
     public static void main(String[] args) throws SQLException {
         Connection conn = DriverManager.getConnection("jdbc:h2:./main");
         Statement stmt = conn.createStatement();
-        stmt. execute("CREATE TABLE IF NOT EXISTS beers(name VARCHAR , type VARCHAR)");
+        stmt. execute("CREATE TABLE IF NOT EXISTS beers(id IDENTITY , name VARCHAR , type VARCHAR)");
 
         Spark.get(
                 "/",
@@ -115,11 +111,14 @@ public class Main {
         Spark.post(
                 "/edit-beer",
                 ((request, response) -> {
-                    String edit = request.queryParams("beerid");
+                    String id = request.queryParams("beerid");
+                    String name = request.queryParams("beername");
+                    String type = request.queryParams("beertype");
+
+
                     try {
-                        int idNum = Integer.valueOf(edit);
-                        String name = request.queryParams("beername");
-                        String type = request.queryParams("beertype");
+                        int idNum = Integer.valueOf(id);
+                        updateBeer(conn , idNum , name, type);
 
                     } catch (Exception e){
 
